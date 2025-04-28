@@ -1,25 +1,18 @@
-import pymysql
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from sqlalchemy import create_engine    
-from pymysql.cursors import DictCursor
+from sqlalchemy import create_engine
 import os
 
 app = FastAPI()
 
+# Configuración de la base de datos
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'mysql')  
 MYSQL_USER = os.getenv('MYSQL_USER', 'user')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password') 
-MYSQL_DB = os.getenv('MYSQL_DB', 'video_games')  
+MYSQL_DB = os.getenv('MYSQL_DB', 'video_games')
 
-def get_db_connection():
-    return pymysql.connect(
-        host=MYSQL_HOST,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DB,
-        cursorclass=DictCursor 
-    )
+# Crear el engine de SQLAlchemy para la conexión a MySQL
+engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}')
 
 def extraer_tablas():
     tablas = ['genre', 'game']
@@ -27,17 +20,13 @@ def extraer_tablas():
 
     os.makedirs(carpeta_destino, exist_ok=True)
 
-    engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}')
-
     for tabla in tablas:
         df = pd.read_sql(f"SELECT * FROM {tabla}", con=engine)
         archivo_salida = os.path.join(carpeta_destino, f"{tabla}.csv")
         df.to_csv(archivo_salida, index=False)
         print(f"Tabla {tabla} exportada a {archivo_salida}")
 
-        
 extraer_tablas()
-
 
 @app.get("/games/genre")
 async def get_shooter_games(genre: str):
@@ -54,11 +43,8 @@ async def get_shooter_games(genre: str):
     LIMIT 50;
     """
     try:
-        connection = get_db_connection()
-        with connection.cursor() as cursor:
-            cursor.execute(query,(genre,))
-            result = cursor.fetchall()  # Obtiene todos los resultados
-        connection.close()
-        return result
-    except pymysql.MySQLError as e:
+        # Ejecutamos la consulta directamente con SQLAlchemy
+        result = pd.read_sql(query, con=engine, params=(genre,))
+        return result.to_dict(orient='records')  # Convertimos el DataFrame a diccionario
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
