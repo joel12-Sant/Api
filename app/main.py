@@ -35,8 +35,7 @@ def extraer_tablas():
         df.to_csv(archivo_salida, index=False)
         print(f"Tabla {tabla} exportada a {archivo_salida}")
 
-    engine.close()  # Cerrar la conexión al final
-
+        
 extraer_tablas()
 
 
