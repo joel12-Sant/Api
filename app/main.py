@@ -42,18 +42,19 @@ for archivo in tablas:
 async def get_shooter_games(genre: str):
     query = """
     SELECT game.game_name as nombre_juego, 
-    platform.platform_name as plataforma,
-    release_year as año_lanzamiento
+           platform.platform_name as plataforma,
+           release_year as año_lanzamiento
     FROM game
     JOIN genre ON genre.id = game.genre_id
     JOIN game_publisher ON game_publisher.game_id = game.id
     JOIN game_platform ON game_platform.game_publisher_id = game_publisher.id
     JOIN platform ON platform.id = game_platform.platform_id
-    WHERE genre.genre_name = %s
+    WHERE genre.genre_name LIKE %s
     LIMIT 50;
     """
     try:
-        result = pd.read_sql(query, con=engine, params=(genre,))
+        genre_param = f"%{genre}%" 
+        result = pd.read_sql(query, con=engine, params=(genre_param,))
         return result.to_dict(orient='records') 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
@@ -70,11 +71,11 @@ async def get_shooter_games(year: int,platform: str):
     INNER JOIN game_platform gpl ON gp.id = gpl.game_publisher_id
     INNER JOIN platform p ON gpl.platform_id = p.id
     WHERE gpl.release_year = %s
-    AND p.platform_name = %s
+    AND p.platform_name like %s
     LIMIT 50;
     """
     try:
-        result = pd.read_sql(query, con=engine, params=(year,platform))
+        result = pd.read_sql(query, con=engine, params=(year,f"%{platform}%"))
         return result.to_dict(orient='records') 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
