@@ -1,5 +1,7 @@
 import pymysql
+import pandas as pd
 from fastapi import FastAPI, HTTPException
+from sqlalchemy import create_engine    
 from pymysql.cursors import DictCursor
 import os
 
@@ -18,6 +20,25 @@ def get_db_connection():
         database=MYSQL_DB,
         cursorclass=DictCursor 
     )
+
+def extraer_tablas():
+    tablas = ['genre', 'game']
+    carpeta_destino = '/app/data'
+
+    os.makedirs(carpeta_destino, exist_ok=True)
+
+    engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}')
+
+    for tabla in tablas:
+        df = pd.read_sql(f"SELECT * FROM {tabla}", con=engine)
+        archivo_salida = os.path.join(carpeta_destino, f"{tabla}.csv")
+        df.to_csv(archivo_salida, index=False)
+        print(f"Tabla {tabla} exportada a {archivo_salida}")
+
+    engine.close()  # Cerrar la conexión al final
+
+extraer_tablas()
+
 
 @app.get("/games/genre")
 async def get_shooter_games(genre: str):
