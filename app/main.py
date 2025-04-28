@@ -5,17 +5,17 @@ import os
 
 app = FastAPI()
 
-# Configuración de la base de datos
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'mysql')  
 MYSQL_USER = os.getenv('MYSQL_USER', 'user')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password') 
 MYSQL_DB = os.getenv('MYSQL_DB', 'video_games')
 
-# Crear el engine de SQLAlchemy para la conexión a MySQL
 engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}')
+tablas = ['genre', 'game','game_platform','game_publisher','platform','publisher','region','region_sales']
+carpeta_destino = '/app/data'
 
 def extraer_tablas():
-    tablas = ['genre', 'game']
+    tablas = ['genre', 'game','game_platform','game_publisher','platform','publisher','region','region_sales']
     carpeta_destino = '/app/data'
 
     os.makedirs(carpeta_destino, exist_ok=True)
@@ -27,6 +27,16 @@ def extraer_tablas():
         print(f"Tabla {tabla} exportada a {archivo_salida}")
 
 extraer_tablas()
+
+#Verificar la existencia de loa archivos exportados
+for archivo in tablas:
+    ruta_archivo = os.path.join(carpeta_destino, f"{archivo}.csv")
+    
+    if os.path.exists(ruta_archivo):
+        print(f"El archivo {archivo} se ha descargado correctamente.")
+        df = pd.read_csv(ruta_archivo)        
+    else:
+        print(f"El archivo {archivo} no se encuentra en la ruta {ruta_archivo}.")
 
 @app.get("/games/genre")
 async def get_shooter_games(genre: str):
@@ -43,8 +53,28 @@ async def get_shooter_games(genre: str):
     LIMIT 50;
     """
     try:
-        # Ejecutamos la consulta directamente con SQLAlchemy
         result = pd.read_sql(query, con=engine, params=(genre,))
-        return result.to_dict(orient='records')  # Convertimos el DataFrame a diccionario
+        return result.to_dict(orient='records') 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
+
+@app.get("/games/year")
+async def get_shooter_games(year: int,platform: str):
+    query = """
+    SELECT 
+    g.game_name, 
+    p.platform_name, 
+    gpl.release_year
+    FROM game g
+    INNER JOIN game_publisher gp ON g.id = gp.game_id
+    INNER JOIN game_platform gpl ON gp.id = gpl.game_publisher_id
+    INNER JOIN platform p ON gpl.platform_id = p.id
+    WHERE gpl.release_year = %s
+    AND p.platform_name = %s
+    LIMIT 50;
+    """
+    try:
+        result = pd.read_sql(query, con=engine, params=(year,platform))
+        return result.to_dict(orient='records') 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
