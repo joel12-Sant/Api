@@ -11,13 +11,18 @@ MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password')
 MYSQL_DB = os.getenv('MYSQL_DB', 'video_games')
 
 engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}')
+FIELD_QUERIES = {
+"platform_name": "SELECT DISTINCT platform_name FROM platform",
+"release_year": "SELECT DISTINCT release_year FROM game_platform ORDER BY release_year",
+"publisher_name": "SELECT DISTINCT publisher_name FROM publisher",
+"genre_name": "SELECT DISTINCT genre_name FROM genre",
+"region_name": "SELECT DISTINCT region_name FROM region"
+}
 tablas = ['genre', 'game','game_platform','game_publisher','platform','publisher','region','region_sales']
 carpeta_destino = '/app/data'
 
+#Extraccion
 def extraer_tablas():
-    tablas = ['genre', 'game','game_platform','game_publisher','platform','publisher','region','region_sales']
-    carpeta_destino = '/app/data'
-
     os.makedirs(carpeta_destino, exist_ok=True)
 
     for tabla in tablas:
@@ -38,6 +43,7 @@ for archivo in tablas:
     else:
         print(f"El archivo {archivo} no se encuentra en la ruta {ruta_archivo}.")
 
+#Consultas
 @app.get("/games/genre")
 async def get_shooter_games(genre: str):
     query = """
@@ -79,14 +85,6 @@ async def get_shooter_games(year: int = 2000,platform: str= ""):
         return result.to_dict(orient='records') 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
-    
-FIELD_QUERIES = {
-"platform_name": "SELECT DISTINCT platform_name FROM platform",
-"release_year": "SELECT DISTINCT release_year FROM game_platform ORDER BY release_year",
-"publisher_name": "SELECT DISTINCT publisher_name FROM publisher",
-"genre_name": "SELECT DISTINCT genre_name FROM genre",
-"region_name": "SELECT DISTINCT region_name FROM region"
-}
 
 @app.get("/video_games/{field}")
 async def get_field_values(field: str = Path(..., description="Campo a consultar")):
