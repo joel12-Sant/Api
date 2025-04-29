@@ -100,7 +100,8 @@ async def get_field_values(field: str = Path(..., description="Campo a consultar
         return result[field].dropna().unique().tolist()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {e}")
-@app.get("/game/top_sales")
+
+@app.get("/games/top_sales")
 async def get_top_sales_by_region(region: str = "Japan", limit: int = 2):
     query = f"""
     SELECT 
@@ -118,6 +119,36 @@ async def get_top_sales_by_region(region: str = "Japan", limit: int = 2):
     """
     try:
         result = pd.read_sql(query, con=engine, params=(f"%{region}%",))
+        return result.to_dict(orient='records')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/video_games/{field}")
+async def get_field_values(field: str = Path(..., description="Campo a consultar")):
+    query = FIELD_QUERIES.get(field)
+    
+    if not query:
+        raise HTTPException(status_code=400, detail=f"Campo '{field}' no es válido. Usa uno de: {', '.join(FIELD_QUERIES.keys())}")
+    
+    try:
+        result = pd.read_sql(query, con=engine)
+        return result[field].dropna().unique().tolist()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {e}")
+
+@app.get("/games/game")
+async def get_top_sales_by_region(game: str = ""):
+    query = f"""
+    SELECT game_name,platform_name,release_year,genre_name
+    FROM game,genre,game_publisher,game_platform,platform
+    WHERE platform.id=game_platform.platform_id
+    and game_publisher.id=game_platform.game_publisher_id
+    AND game.id=game_publisher.game_id
+    and genre.id=game.genre_id
+    and game.game_name like %s;
+    """
+    try:
+        result = pd.read_sql(query, con=engine, params=(f"%{game}%",))
         return result.to_dict(orient='records')
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
