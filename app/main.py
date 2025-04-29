@@ -123,20 +123,7 @@ async def get_top_sales_by_region(region: str = "Japan", limit: int = 2):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/video_games/{field}")
-async def get_field_values(field: str = Path(..., description="Campo a consultar")):
-    query = FIELD_QUERIES.get(field)
-    
-    if not query:
-        raise HTTPException(status_code=400, detail=f"Campo '{field}' no es válido. Usa uno de: {', '.join(FIELD_QUERIES.keys())}")
-    
-    try:
-        result = pd.read_sql(query, con=engine)
-        return result[field].dropna().unique().tolist()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {e}")
-
-@app.get("/games/game")
+@app.get("/games/name_game")
 async def get_top_sales_by_region(game: str = ""):
     query = f"""
     SELECT game_name,platform_name,release_year,genre_name
@@ -150,5 +137,23 @@ async def get_top_sales_by_region(game: str = ""):
     try:
         result = pd.read_sql(query, con=engine, params=(f"%{game}%",))
         return result.to_dict(orient='records')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/publishers/top")
+async def get_top_publishers(limit: int = 10):
+    query = """
+    SELECT 
+        pub.publisher_name,
+        COUNT(DISTINCT gp.game_id) AS total_games
+    FROM publisher pub
+    JOIN game_publisher gp ON pub.id = gp.publisher_id
+    GROUP BY pub.publisher_name
+    ORDER BY total_games DESC
+    LIMIT %s;
+    """
+    try:
+        result = pd.read_sql(query, con=engine, params=(limit,))
+        return result.to_dict(orient="records")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
