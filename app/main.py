@@ -1,5 +1,6 @@
 import pandas as pd
 from fastapi import FastAPI, HTTPException,Path
+from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine
 import os
 
@@ -21,7 +22,7 @@ FIELD_QUERIES = {
 tablas = ['genre', 'game','game_platform','game_publisher','platform','publisher','region','region_sales']
 carpeta_destino = '/app/data'
 
-#Extraccion
+#Exportacion de archivos
 def extraer_tablas():
     os.makedirs(carpeta_destino, exist_ok=True)
 
@@ -33,19 +34,60 @@ def extraer_tablas():
 
 extraer_tablas()
 
+df = {}
 #Verificar la existencia de loa archivos exportados
 for archivo in tablas:
     ruta_archivo = os.path.join(carpeta_destino, f"{archivo}.csv")
     
     if os.path.exists(ruta_archivo):
         print(f"El archivo {archivo} se ha descargado correctamente.")
-        df = pd.read_csv(ruta_archivo)        
+        d = pd.read_csv(ruta_archivo)        
+        df[archivo] = d 
     else:
         print(f"El archivo {archivo} no se encuentra en la ruta {ruta_archivo}.")
 
 #Consultas
+@app.get("/games/genre/html")
+def get_genre_html(genre: str = "",limit: int = 20):
+    df_game           = df["game"]
+    df_genre          = df["genre"]
+    df_game_pub       = df["game_publisher"]
+    df_game_platform  = df["game_platform"]
+    df_platform       = df["platform"]
+
+    merged = df_game.merge(
+        df_genre,
+        left_on="genre_id",
+        right_on="id",
+        suffixes=("", "_genre")
+    )
+    merged = merged.merge(
+        df_game_pub,
+        left_on="id",           
+        right_on="game_id", 
+        suffixes=("", "_gp")
+    )
+    merged = merged.merge(
+        df_game_platform,
+        left_on="id_gp",       
+        right_on="game_publisher_id",
+        suffixes=("", "_gplat")
+    )
+    merged = merged.merge(
+        df_platform,
+        left_on="platform_id",
+        right_on="id",
+        suffixes=("", "_platform")
+    )
+    filtro = merged["genre_name"].str.contains(genre, case=False, na=False)
+    resultado = merged.loc[filtro, ["game_name", "platform_name", "release_year"]]
+
+    resultado = resultado.head(limit).to_html(index=False)
+
+    return HTMLResponse(content=resultado)
+
 @app.get("/games/genre")
-async def get_shooter_games(genre: str):
+async def get_shooter_games(genre: str = "",limit: int = 20):
     query = """
     SELECT game.game_name as nombre_juego, 
            platform.platform_name as plataforma,
@@ -56,11 +98,11 @@ async def get_shooter_games(genre: str):
     JOIN game_platform ON game_platform.game_publisher_id = game_publisher.id
     JOIN platform ON platform.id = game_platform.platform_id
     WHERE genre.genre_name LIKE %s
-    LIMIT 50;
+    LIMIT %s;
     """
     try:
-        genre_param = f"%{genre}%" 
-        result = pd.read_sql(query, con=engine, params=(genre_param,))
+        genre_param = f"%{genre}%"
+        result = pd.read_sql(query, con=engine, params=(genre_param,limit))
         return result.to_dict(orient='records') 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión a la base de datos: {e}")
@@ -121,24 +163,33 @@ async def get_top_sales_by_region(region: str = "Japan", limit: int = 2):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/games/name_game")
-async def get_top_sales_by_region(game: str = ""):
+@app.get("/game")
+async def get_top_sales_by_region(game: str = "",
+                                  platform: str="",
+                                  year: str = "",
+    ):
     query = f"""
     SELECT game_name,platform_name,release_year,genre_name
     FROM game,genre,game_publisher,game_platform,platform
     WHERE platform.id=game_platform.platform_id
+    and game_platform.release_year like %s
+    and platform.platform_name like %s 
     and game_publisher.id=game_platform.game_publisher_id
     AND game.id=game_publisher.game_id
     and genre.id=game.genre_id
-    and game.game_name like %s;
+    and game.game_name like %s
+    LIMIT 100;
     """
     try:
-        result = pd.read_sql(query, con=engine, params=(f"%{game}%",))
+        year_param = f"%{year}%"
+        platform_param = f"%{platform}%" 
+        game_param = f"%{game}%"
+        result = pd.read_sql(query, con=engine, params=(year_param,platform_param,game_param,))
         return result.to_dict(orient='records')
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/publishers/top")
+@app.get("/publishers/top/{limit}")
 async def get_top_publishers(limit: int = 10):
     query = """
     SELECT 
