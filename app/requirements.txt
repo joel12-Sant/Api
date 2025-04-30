@@ -4,3 +4,4 @@ pymysql
 python-dotenv
 pandas
 sqlalchemy
+matplotlib

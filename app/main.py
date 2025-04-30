@@ -1,7 +1,9 @@
 import pandas as pd
 from fastapi import FastAPI, HTTPException,Path
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse,Response
 from sqlalchemy import create_engine
+import matplotlib.pyplot as plt
+from io import BytesIO
 import os
 
 app = FastAPI()
@@ -46,14 +48,48 @@ for archivo in tablas:
     else:
         print(f"El archivo {archivo} no se encuentra en la ruta {ruta_archivo}.")
 
+df_game = df["game"]
+df_genre = df["genre"]
+df_game_pub = df["game_publisher"]
+df_game_platform = df["game_platform"]
+df_platform = df["platform"]
+
 #Consultas
+@app.get("/games/genre/image", response_class=Response)
+def get_genre_games_chart(genre: str = "", limit: int = 20):
+    try:
+        merged = df_game.merge(df_genre, left_on="genre_id", right_on="id", suffixes=("", "_genre"))
+        merged = merged.merge(df_game_pub, left_on="id", right_on="game_id")
+        merged = merged.merge(df_game_platform, left_on="id_y", right_on="game_publisher_id")
+        merged = merged.merge(df_platform, left_on="platform_id", right_on="id", suffixes=("", "_platform"))
+
+        filtro = merged["genre_name"].str.contains(genre, case=False, na=False)
+        resultado = merged.loc[filtro, ["game_name", "platform_name", "release_year"]]
+
+        resultado = resultado.head(limit)
+
+        conteo = resultado["platform_name"].value_counts()
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        conteo.plot(kind="barh", color="skyblue", ax=ax)
+        ax.set_title(f"Juegos del género '{genre}' por plataforma")
+        ax.set_xlabel("Cantidad de juegos")
+        ax.invert_yaxis()
+        plt.tight_layout()
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        plt.close()
+
+        return Response(content=buf.getvalue(), media_type="image/png")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar gráfico: {e}")
+
+
 @app.get("/games/genre/html")
 def get_genre_html(genre: str = "",limit: int = 20):
-    df_game           = df["game"]
-    df_genre          = df["genre"]
-    df_game_pub       = df["game_publisher"]
-    df_game_platform  = df["game_platform"]
-    df_platform       = df["platform"]
 
     merged = df_game.merge(
         df_genre,
