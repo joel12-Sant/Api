@@ -1,6 +1,6 @@
 import pandas as pd
 from fastapi import FastAPI, HTTPException,Path
-from fastapi.responses import HTMLResponse,Response
+from fastapi.responses import HTMLResponse,Response,StreamingResponse
 from sqlalchemy import create_engine
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -13,7 +13,10 @@ MYSQL_USER = os.getenv('MYSQL_USER', 'user')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password') 
 MYSQL_DB = os.getenv('MYSQL_DB', 'video_games')
 
+#Conexion a la base de datos
 engine = create_engine(f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}')
+
+#Definicion de Variables
 FIELD_QUERIES = {
 "platform_name": "SELECT DISTINCT platform_name FROM platform",
 "release_year": "SELECT DISTINCT release_year FROM game_platform ORDER BY release_year",
@@ -27,17 +30,15 @@ carpeta_destino = '/app/data'
 #Exportacion de archivos
 def extraer_tablas():
     os.makedirs(carpeta_destino, exist_ok=True)
-
     for tabla in tablas:
         df = pd.read_sql(f"SELECT * FROM {tabla}", con=engine)
         archivo_salida = os.path.join(carpeta_destino, f"{tabla}.csv")
         df.to_csv(archivo_salida, index=False)
         print(f"Tabla {tabla} exportada a {archivo_salida}")
-
 extraer_tablas()
 
+#Verificar la existencia de loa archivos exportados y asignacion
 df = {}
-#Verificar la existencia de loa archivos exportados
 for archivo in tablas:
     ruta_archivo = os.path.join(carpeta_destino, f"{archivo}.csv")
     
@@ -53,11 +54,14 @@ df_genre = df["genre"]
 df_game_pub = df["game_publisher"]
 df_game_platform = df["game_platform"]
 df_platform = df["platform"]
+df_region = df["region"]
+df_region_sales = df["region_sales"]
 
-#Consultas
-@app.get("/games/genre/image", response_class=Response)
+#Consultas Grafica
+@app.get("/games/genre/grafic")
 def get_genre_games_chart(genre: str = "", limit: int = 20):
     try:
+        # Realizas los merges necesarios para juntar los datos de varias tablas
         merged = df_game.merge(df_genre, left_on="genre_id", right_on="id", suffixes=("", "_genre"))
         merged = merged.merge(df_game_pub, left_on="id", right_on="game_id")
         merged = merged.merge(df_game_platform, left_on="id_y", right_on="game_publisher_id")
@@ -65,32 +69,26 @@ def get_genre_games_chart(genre: str = "", limit: int = 20):
 
         filtro = merged["genre_name"].str.contains(genre, case=False, na=False)
         resultado = merged.loc[filtro, ["game_name", "platform_name", "release_year"]]
-
         resultado = resultado.head(limit)
-
         conteo = resultado["platform_name"].value_counts()
-
         fig, ax = plt.subplots(figsize=(8, 4))
-        conteo.plot(kind="barh", color="skyblue", ax=ax)
+        conteo.plot(kind="bar", color="green", ax=ax)
         ax.set_title(f"Juegos del género '{genre}' por plataforma")
-        ax.set_xlabel("Cantidad de juegos")
-        ax.invert_yaxis()
+        ax.set_xlabel("Plataforma")
+        ax.set_ylabel("Cantidad de juegos")
         plt.tight_layout()
 
         buf = BytesIO()
         plt.savefig(buf, format="png")
-        buf.seek(0)
+        buf.seek(0)  
         plt.close()
-
-        return Response(content=buf.getvalue(), media_type="image/png")
-
+        return StreamingResponse(buf, media_type="image/png")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar gráfico: {e}")
-
-
-@app.get("/games/genre/html")
+    
+#Consultas de Tablas
+@app.get("/games/genre/table",response_class=HTMLResponse)
 def get_genre_html(genre: str = "",limit: int = 20):
-
     merged = df_game.merge(
         df_genre,
         left_on="genre_id",
@@ -117,11 +115,72 @@ def get_genre_html(genre: str = "",limit: int = 20):
     )
     filtro = merged["genre_name"].str.contains(genre, case=False, na=False)
     resultado = merged.loc[filtro, ["game_name", "platform_name", "release_year"]]
-
     resultado = resultado.head(limit).to_html(index=False)
-
     return HTMLResponse(content=resultado)
 
+@app.get("/games/year/table",response_class=HTMLResponse)
+async def get_year(year: str = "2000",platform: str= "",limit: int=20):
+    merged = df_game.merge(
+        df_game_pub,
+        left_on="id",
+        right_on="game_id",
+        suffixes=("","_gp") 
+    )
+    merged = merged.merge(
+        df_game_platform,
+        left_on="id_gp",
+        right_on="game_publisher_id",
+        suffixes=("","_gplat") 
+    )
+    merged = merged.merge(
+        df_platform,
+        left_on="platform_id",
+        right_on="id",
+        suffixes=("","_platform") 
+    )
+    filtro = merged["release_year"].astype(str).str.contains(year,case=False,na=False) & \
+             merged["platform_name"].str.contains(platform,case=False,na=False) 
+    resultado = merged.loc[filtro,["game_name","platform_name","release_year"]] 
+    resultado = resultado.head(limit).to_html(index=False)
+    return HTMLResponse(content=resultado)
+
+@app.get("/games/top_sales/table")
+def get_total_sale(region_name: str = "", limit: int = 20):
+    try:
+        merged = df_game.merge(
+            df_game_pub, 
+            left_on="id", 
+            right_on="game_id", 
+            suffixes=("", "_gp")
+        )
+        merged = merged.merge(
+            df_game_platform, 
+            left_on="id_gp",
+            right_on="game_publisher_id",
+            suffixes=("", "_gplat")
+        )
+        merged = merged.merge(
+            df_region_sales, 
+            left_on="id_gplat", 
+            right_on="game_platform_id", 
+            suffixes=("", "_rs")
+        )
+        merged = merged.merge(
+            df_region, 
+            left_on="region_id", 
+            right_on="id", 
+            suffixes=("", "_reg")
+        )
+        filtro = merged["region_name"].str.contains(region_name, case=False, na=False)
+        filtered_data = merged.loc[filtro]
+        total_sales = filtered_data.groupby("game_name")["num_sales"].sum().reset_index()
+        total_sales = total_sales.sort_values(by="num_sales", ascending=False)
+        total_sales = total_sales.head(limit).to_html(index=False)
+        return HTMLResponse(content=total_sales)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener ventas: {e}")
+
+#Consultas Basicas
 @app.get("/games/genre")
 async def get_shooter_games(genre: str = "",limit: int = 20):
     query = """
@@ -178,8 +237,8 @@ async def get_field_values(field: str = Path(..., description="Campo a consultar
         raise HTTPException(status_code=500, detail=f"Error al consultar la base de datos: {e}")
 
 @app.get("/games/top_sales")
-async def get_top_sales_by_region(region: str = "Japan", limit: int = 2):
-    query = f"""
+async def get_top_sales_by_region(region: str = "", limit: int = 2):
+    query = """
     SELECT 
         g.game_name, 
         SUM(rs.num_sales) AS total_sales
@@ -191,16 +250,18 @@ async def get_top_sales_by_region(region: str = "Japan", limit: int = 2):
     WHERE r.region_name LIKE %s
     GROUP BY g.game_name
     ORDER BY total_sales DESC
-    LIMIT {limit};
+    LIMIT %s;
     """
     try:
-        result = pd.read_sql(query, con=engine, params=(f"%{region}%",))
+        region_param=f"%{region}%"
+        with engine.connect() as connection: 
+            result = pd.read_sql(query, con=engine, params=(region_param,limit))
         return result.to_dict(orient='records')
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/game")
-async def get_top_sales_by_region(game: str = "",
+async def get_top_sales_by_regions(game: str = "",
                                   platform: str="",
                                   year: str = "",
     ):
