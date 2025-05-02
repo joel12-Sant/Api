@@ -82,6 +82,8 @@ Si ya lo tienes instalado puedes saltarte este proceso de instalación.
     - `region` (str): Nombre de la región (ej. `"Europe"`).
     - `limit` (int): Número máximo de juegos a mostrar (default: 10).
 
+![image](https://github.com/user-attachments/assets/21e9dd71-9152-4854-9604-1141a5861c10)
+
 ---
 
 ### 3. `/publishers/top/{limit}/grafic`
@@ -90,6 +92,8 @@ Si ya lo tienes instalado puedes saltarte este proceso de instalación.
 - **Descripción**: Muestra las editoras con más juegos publicados en una gráfica.  
 - **Parámetros**:
     - `limit` (int): Número de editoras a mostrar.
+
+![image](https://github.com/user-attachments/assets/783c629f-8b42-47df-8954-db864933b9ce)
 
 ---
 
