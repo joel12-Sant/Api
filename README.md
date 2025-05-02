@@ -1,3 +1,4 @@
+hola papus a este tuto :v
 # 📊 Video Games API
 
 API para consultar y visualizar información sobre videojuegos, editoras, plataformas, ventas por región, géneros y años de lanzamiento. Construida con FastAPI, Pandas y SQL para generar tablas y gráficos dinámicos.
