@@ -216,3 +216,6 @@ Esto descargará las imágenes necesarias, levantará los contenedores y expondr
 ## ©️ Derechos de autor
 
 © 2025 joel12-Sant. Todos los derechos reservados.
+© 2025 alejandromtzg. Todos los derechos reservados.
+
+
