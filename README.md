@@ -3,7 +3,7 @@
 API para consultar y visualizar información sobre videojuegos, editoras, plataformas, ventas por región, géneros y años de lanzamiento. Construida con FastAPI, Pandas y SQL para generar tablas y gráficos dinámicos.
 
 ---
-
+hola papus
 ## 🚀 Tecnologías Utilizadas
 - **FastAPI**: Framework para construir APIs web.
 - **SQLAlchemy**: Conexión con base de datos MySQL.
