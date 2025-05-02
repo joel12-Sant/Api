@@ -30,7 +30,7 @@ services:
     build: ./app
     restart: unless-stopped
     volumes:
-      - ./data:/app/data
+      - ./app/data:/app/data
     env_file:
       - ./.env
     depends_on:
