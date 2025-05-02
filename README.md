@@ -1,20 +1,149 @@
----------- Configuarcion
-Solo debes de colocar el comando " docker compose up --build " en la terminal en la ruta donde extragiste el archivo (debes de tener instalado docker)
+# 📊 Video Games API
 
+Esta API permite consultar y visualizar información relacionada con videojuegos, editoras, plataformas, ventas por región, géneros y años de lanzamiento. Utiliza FastAPI, Pandas y consultas SQL para generar tablas y gráficas dinámicas.
 
----------- EndPoint (desactualizado)
-1.- /games/genre?genre=               -> Esta primer consulta nos permite consultar todos los juegos existentes para un genero, nos regresa el nombre anio de lanzamiento y la plataforma 
-2.- /games/year?year= &platform=      -> Esta consulta nos permite consultar los juegos filtrandolos por anio y plataforma, nos regresas lo mismo que el anterior
-3.- /video_games/{field}              -> En esta consulta puedes colocar en el field cuanlquiera de estas opciones que quieras consultar
-[release_year,platform_name,region_name,genre_name,publisher_name] y te devolvera los valores de cada una para que puedas realizar el resto de consultas
-4.- /games/top_sales?region= &limit=  -> Esta consulta te permite consultar el top juegos vendidos de cada region, puedes colocar el nonmre de la region y el limite que desees, se recomienda consultarlo con el anterior
-5.- /games/name_game?game=            -> Esta consulta nos permite buscar un juego por su nombre o parecidos   
-6.- /publishers/top?limit=            -> Esta consulta nos permite buscar las empresas que publicaron mas juegos, pudiendo modificar el limite
+## 🚀 Tecnologías Utilizadas
 
+- **FastAPI**: Framework para construir APIs web.
+- **SQLAlchemy**: Conexión con base de datos MySQL.
+- **Pandas**: Procesamiento de datos.
+- **Matplotlib**: Visualización de datos en gráficos.
+- **MySQL**: Base de datos que almacena la información de videojuegos.
 
----------- Notas
-los archivos.csv se guardan en la ruta /data que se crea de manera automatica al ejecutar el contenedor
+## 📦 Endpoints
 
+### 1. `/games/genre/grafic`
+- **Método**: GET
+- **Descripción**: Muestra una gráfica de barras de los juegos de un género, agrupados por plataforma.
+- **Parámetros**:
+  - `genre` (str): Nombre parcial del género (ej. `"Shooter"`).
+  - `limit` (int): Número máximo de juegos a incluir (default: 20).
 
+---
 
-joel12-San
+### 2. `/games/top_sales/grafic`
+- **Método**: GET
+- **Descripción**: Genera una gráfica de los juegos más vendidos en una región.
+- **Parámetros**:
+  - `region` (str): Nombre de la región (ej. `"Europe"`).
+  - `limit` (int): Número máximo de juegos a mostrar (default: 10).
+
+---
+
+### 3. `/publishers/top/{limit}/grafic`
+- **Método**: GET
+- **Descripción**: Muestra las editoras con más juegos publicados en una gráfica.
+- **Parámetros**:
+  - `limit` (int): Número de editoras a mostrar.
+
+---
+
+### 4. `/games/genre/table`
+- **Método**: GET
+- **Descripción**: Devuelve una tabla HTML con juegos filtrados por género.
+- **Parámetros**:
+  - `genre` (str): Género a filtrar.
+  - `limit` (int): Número máximo de registros.
+
+---
+
+### 5. `/games/year/table`
+- **Método**: GET
+- **Descripción**: Devuelve una tabla HTML de juegos por año y plataforma.
+- **Parámetros**:
+  - `year` (str): Año a filtrar.
+  - `platform` (str): Plataforma a filtrar.
+  - `limit` (int): Cantidad máxima de resultados.
+
+---
+
+### 6. `/games/top_sales/table`
+- **Método**: GET
+- **Descripción**: Tabla HTML de los juegos más vendidos por región.
+- **Parámetros**:
+  - `region_name` (str): Nombre de la región.
+  - `limit` (int): Número de juegos a mostrar.
+
+---
+
+### 7. `/games/genre`
+- **Método**: GET
+- **Descripción**: Lista juegos filtrados por género.
+- **Parámetros**:
+  - `genre` (str): Género a buscar.
+  - `limit` (int): Número de resultados.
+
+---
+
+### 8. `/games/year`
+- **Método**: GET
+- **Descripción**: Lista juegos por año y plataforma.
+- **Parámetros**:
+  - `year` (int): Año de lanzamiento.
+  - `platform` (str): Plataforma.
+
+---
+
+### 9. `/video_games/{field}`
+- **Método**: GET
+- **Descripción**: Lista los valores únicos de un campo (género, plataforma, año, etc.).
+- **Parámetro**:
+  - `field` (str): Campo a consultar (`platform_name`, `release_year`, etc.).
+
+---
+
+### 10. `/games/top_sales`
+- **Método**: GET
+- **Descripción**: Lista los juegos más vendidos por región.
+- **Parámetros**:
+  - `region` (str): Nombre de la región.
+  - `limit` (int): Número de resultados.
+
+---
+
+### 11. `/game`
+- **Método**: GET
+- **Descripción**: Filtro múltiple por juego, plataforma y año.
+- **Parámetros**:
+  - `game` (str): Nombre parcial del juego.
+  - `platform` (str): Nombre de la plataforma.
+  - `year` (str): Año de lanzamiento.
+
+---
+
+### 12. `/publishers/top/{limit}`
+- **Método**: GET
+- **Descripción**: Lista las editoras con más juegos publicados.
+- **Parámetro**:
+  - `limit` (int): Número de editoras a mostrar.
+
+---
+
+## 📁 Archivos Exportados
+
+Las tablas de la base de datos se exportan como archivos `.csv` en `/app/data` automáticamente al iniciar la aplicación.
+
+---
+
+## ⚙️ Variables de Entorno
+
+- `MYSQL_HOST` – Dirección del servidor MySQL.
+- `MYSQL_USER` – Usuario de la base de datos.
+- `MYSQL_PASSWORD` – Contraseña.
+- `MYSQL_DB` – Nombre de la base de datos.
+
+---
+
+## 📈 Visualizaciones
+
+Todas las gráficas son generadas usando `matplotlib` y se devuelven como imágenes PNG listas para integrar en frontend o dashboards.
+
+---
+
+## 🧪 Ejecución
+
+Puedes probar los endpoints con Swagger UI en:  
+`http://localhost:8000/docs`
+
+---
+
