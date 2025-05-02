@@ -8,6 +8,7 @@ import os
 
 app = FastAPI()
 
+#Variables de entorno
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'mysql')  
 MYSQL_USER = os.getenv('MYSQL_USER', 'user')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'password') 
