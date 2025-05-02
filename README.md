@@ -69,6 +69,8 @@ Si ya lo tienes instalado puedes saltarte este proceso de instalación.
     - `genre` (str): Nombre parcial del género (ej. `"Shooter"`).
     - `limit` (int): Número máximo de juegos a incluir (default: 20).
 
+![image](https://github.com/user-attachments/assets/3e63b37c-7213-4e55-bc92-5999b5b3dbcb)
+
 ---
 
 ### 2. `/games/top_sales/grafic`
