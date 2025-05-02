@@ -204,7 +204,7 @@ docker compose up --build
 ```
 Esto descargará las imágenes necesarias, levantará los contenedores y expondrá los puertos según lo definido en tu docker-compose.yml. Una vez iniciada, podrás acceder a Swagger UI en:  
 
-`http://localhost:8000/docs`
+[`http://localhost:8000/docs`](http://localhost:8000/docs#)
 
 ## ©️ Derechos de autor
 
