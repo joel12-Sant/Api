@@ -1,6 +1,6 @@
 # 📊 Video Games API
 
-Esta API permite consultar y visualizar información relacionada con videojuegos, editoras, plataformas, ventas por región, géneros y años de lanzamiento. Utiliza FastAPI, Pandas y consultas SQL para generar tablas y gráficas dinámicas.
+API para consultar y visualizar información sobre videojuegos, editoras, plataformas, ventas por región, géneros y años de lanzamiento. Construida con FastAPI, Pandas y SQL para generar tablas y gráficos dinámicos.
 
 ## 🚀 Tecnologías Utilizadas
 
@@ -117,33 +117,28 @@ Esta API permite consultar y visualizar información relacionada con videojuegos
 - **Parámetro**:
   - `limit` (int): Número de editoras a mostrar.
 
----
-
 ## 📁 Archivos Exportados
 
 Las tablas de la base de datos se exportan como archivos `.csv` en `/app/data` automáticamente al iniciar la aplicación.
 
----
-
 ## ⚙️ Variables de Entorno
+
+Asegúrate de configurar las siguientes variables de entorno en tu archivo `.env`:
 
 - `MYSQL_HOST` – Dirección del servidor MySQL.
 - `MYSQL_USER` – Usuario de la base de datos.
-- `MYSQL_PASSWORD` – Contraseña.
+- `MYSQL_PASSWORD` – Contraseña de la base de datos.
 - `MYSQL_DB` – Nombre de la base de datos.
-
----
 
 ## 📈 Visualizaciones
 
 Todas las gráficas son generadas usando `matplotlib` y se devuelven como imágenes PNG listas para integrar en frontend o dashboards.
 
----
-
 ## 🧪 Ejecución
 
-Puedes probar los endpoints con Swagger UI en:  
+Puedes probar los endpoints interactivos usando Swagger UI:  
 `http://localhost:8000/docs`
 
----
+## ©️ Derechos de autor
 
+© 2025 joel12-Sant. Todos los derechos reservados.
