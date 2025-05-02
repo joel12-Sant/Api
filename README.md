@@ -216,4 +216,5 @@ Esto descargará las imágenes necesarias, levantará los contenedores y expondr
 
 © 2025 joel12-Sant & alejandromtzg. Todos los derechos reservados.  
 
+funciona
 
